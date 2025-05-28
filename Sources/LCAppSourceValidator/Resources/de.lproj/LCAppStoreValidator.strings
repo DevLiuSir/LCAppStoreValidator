@@ -1,0 +1,10 @@
+//
+//  LCAppStoreValidator.strings
+//
+//  Created by DevLiuSir on 2023/3/2.
+//
+
+"app_source_validator.messageText" = "Hinweis";
+"app_source_validator.informativeText" = "Nicht-App-Store-Version erkannt. Bitte offizielle Version nutzen.";
+"button_cancel.title" = "Abbrechen";
+"button_ok.title" = "OK";

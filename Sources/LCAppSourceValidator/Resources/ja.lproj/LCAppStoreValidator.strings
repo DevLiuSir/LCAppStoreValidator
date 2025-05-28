@@ -1,0 +1,10 @@
+//
+//  LCAppStoreValidator.strings
+//
+//  Created by DevLiuSir on 2023/3/2.
+//
+
+"app_source_validator.messageText" = "お知らせ";
+"app_source_validator.informativeText" = "App Store以外のバージョンです。安全のため、App Storeから入手してください。";
+"button_cancel.title" = "キャンセル";
+"button_ok.title" = "確認";

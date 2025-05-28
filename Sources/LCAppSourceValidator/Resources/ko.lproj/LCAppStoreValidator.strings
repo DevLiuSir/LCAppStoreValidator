@@ -1,0 +1,10 @@
+//
+//  LCAppStoreValidator.strings
+//
+//  Created by DevLiuSir on 2023/3/2.
+//
+
+"app_source_validator.messageText" = "알림";
+"app_source_validator.informativeText" = "App Store 외 버전입니다. 안전을 위해 정식 버전을 이용하세요.";
+"button_cancel.title" = "취소";
+"button_ok.title" = "확인";
