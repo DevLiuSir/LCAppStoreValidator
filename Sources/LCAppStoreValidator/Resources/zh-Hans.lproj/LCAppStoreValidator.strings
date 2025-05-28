@@ -5,6 +5,6 @@
 //
 
 "app_source_validator.messageText" = "温馨提示";
-"app_source_validator.informativeText" = "检测到非 App Store 版本，为确保安全与稳定，请从 App Store 下载并使用正式版本。"
+"app_source_validator.informativeText" = "检测到非 App Store 版本，为确保安全与稳定，请从 App Store 下载并使用正式版本。";
 "button_cancel.title" = "取消";
 "button_ok.title" = "确定";
