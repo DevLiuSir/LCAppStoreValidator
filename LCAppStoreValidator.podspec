@@ -2,7 +2,7 @@ Pod::Spec.new do |spec|
 
   spec.name           = "LCAppStoreValidator"
   
-  spec.version        = "1.0.0"
+  spec.version        = "1.0.1"
   
   spec.summary        = "LCAppStoreValidator is a lightweight tool for validating whether a macOS app was installed via the App Store."
   
