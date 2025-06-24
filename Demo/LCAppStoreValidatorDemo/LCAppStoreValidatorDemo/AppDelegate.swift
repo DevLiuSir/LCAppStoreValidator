@@ -18,7 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         
         LCAppStoreValidator.configure(appID: "", appGroupName: "")
-        LCAppStoreValidator.checkIfInvalid(afterDays: 1)
+        LCAppStoreValidator.checkExpireAndValidateSource(year: 2022, month: 01, day: 31)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

@@ -20,12 +20,47 @@ public class LCAppStoreValidator: NSObject {
     
     //MARK: - Public
     
-    /// 一次性配置入口（建议在 App 启动时调用）
-    public static func configure(appID: String, appGroupName: String) {
+    
+    /// 配置 App Store 校验器（建议在 App 启动阶段调用）
+    ///
+    /// - Parameters:
+    ///   - appID: 当前应用在 App Store 中的唯一标识符，用于跳转 App Store 页面。
+    ///   - appGroupName: App Group 名称，用于跨进程共享首次启动时间等信息。若为 nil，则使用标准的 UserDefaults。
+    public static func configure(appID: String, appGroupName: String? = nil) {
         self.appID = appID
-        self.groupName = appGroupName
+        self.groupName = appGroupName ?? ""
     }
     
+    /// 判断`应用是否过期`，如果过期则校验是否来自 App Store，否则弹窗退出
+    /// - Parameters:
+    ///   - year: 截止年
+    ///   - month: 截止月
+    ///   - day: 截止日
+    public static func checkExpireAndValidateSource(year: Int, month: Int, day: Int) {
+        // 获取当前日期
+        let calendar = Calendar.current
+        let currentDate = Date()
+        
+        // 获取给定的日期
+        guard let expireDate = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
+            print("❌ 无效的过期时间")
+            return
+        }
+        // 比较《给定的日期》是否超过《当前日期》，超过指定日期，显示警告
+        if currentDate > expireDate {
+            print("⚠️ 当前时间已超过设定过期时间")
+            // 判断来源是否为 App Store
+            if isFromAppStore() {
+                print("✅ 是 App Store 版本，允许继续使用")
+            } else {
+                print("❌ 非 App Store 安装，弹窗提示并退出")
+                // 弹窗提示 + 跳转 App Store + 退出应用
+                showAlertAndExit()
+            }
+        } else {
+            print("✅ 当前时间未过期")
+        }
+    }
     
     /// 主验证入口：在首次安装指定天数后验证是否为 App Store 安装版本
     public static func checkIfInvalid(afterDays days: Int) {
@@ -49,25 +84,47 @@ public class LCAppStoreValidator: NSObject {
     
     /// 判断`当前应用`是否是通过 `App Store` 下载的
     /// - Returns: 如果是通过 App Store 下载并安装的应用，返回 true；否则返回 false
-    private static func isFromAppStore() -> Bool {
-        // 获取 App Store 收据文件的 URL（即购买凭证路径）
+    public static func isFromAppStore() -> Bool {
+        // 1、获取 App Store 收据文件的 URL（即购买凭证路径）
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
               // 检查收据文件是否存在。如果不存在，说明不是从 App Store 下载的应用
               FileManager.default.fileExists(atPath: receiptURL.path) else {
             return false
         }
         
-        // 收据文件存在，进一步判断是否为 App Store 正式发布的应用
+        // 2、收据文件存在，进一步判断是否为 App Store 正式发布的应用
+        
+        // 获取可执行文件路径
         if let execPath = Bundle.main.executablePath,
            // 获取可执行文件的文件属性
            let attrInfo = try? FileManager.default.attributesOfItem(atPath: execPath),
            // 获取文件所有者的账户 ID
            let ownerAccountID = attrInfo[.ownerAccountID] as? NSNumber,
-           // 如果账户 ID 为 501，表示是 App Store 正式下载的应用
+           // 如果账户 ID 为 501，表示不是 App Store的应用，可能是通过 Xcode 运行、TestFlight 或其他方式安装
+           ownerAccountID.intValue == 501 {
+            return false
+        } else {
+            // 如果所有者账户 ID 不是 501，表示是 App Store 正式下载的应用
+            return true
+        }
+    }
+    
+    
+    /// 检查可执行文件的所有者账户 ID 是否为开发者本地账户（UID == 501）
+    ///
+    /// - Returns: 如果 UID 为 501，则返回 true（表示开发环境安装）；否则返回 false。
+    public static func isOwnedByDeveloperAccount() -> Bool {
+        // 获取可执行文件路径
+        if let execPath = Bundle.main.executablePath,
+           // 获取可执行文件的文件属性
+           let attrInfo = try? FileManager.default.attributesOfItem(atPath: execPath),
+           // 获取文件所有者的账户 ID
+           let ownerAccountID = attrInfo[.ownerAccountID] as? NSNumber,
+           // 如果账户 ID 为 501，表示不是 App Store的应用，可能是通过 Xcode 运行、TestFlight 或其他方式安装
            ownerAccountID.intValue == 501 {
             return true
         } else {
-            // 如果所有者账户 ID 不是 501，可能是通过 Xcode 运行、TestFlight 或其他方式安装
+            // 如果所有者账户 ID 不是 501，表示是 App Store 正式下载的应用
             return false
         }
     }
