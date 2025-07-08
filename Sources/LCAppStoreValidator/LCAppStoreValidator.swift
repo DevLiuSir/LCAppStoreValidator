@@ -79,12 +79,50 @@ public class LCAppStoreValidator: NSObject {
         }
     }
     
+   
+    /// 判断当前 App 是否来自 Mac App Store 签名
+    ///
+    /// 通过执行 `codesign -dv --verbose=4` 命令，并查找签名信息中的 `Authority=Apple Mac OS Application Signing`
+    ///
+    /// - Returns: `true` 表示来自 App Store，`false` 表示非 App Store 安装
+    public static func isFromAppStore() -> Bool {
+        // 执行 codesign 命令，读取当前 App 的签名信息
+        let result = runCommand(
+            launchPath: "/usr/bin/codesign",
+            arguments: ["-dv", "--verbose=4", Bundle.main.bundlePath]
+        )
+        
+        // 如果命令执行失败，直接返回 false
+        guard result.exitCode == 0 else {
+            print("❌ detectEnvironment error: \(result.output)")
+            return false
+        }
+        
+        // 拆分输出内容，提取所有包含 Authority 字段的行
+        let lines = result.output.components(separatedBy: "\n")
+        let authorityLines = lines.filter { $0.hasPrefix("Authority") }
+        
+        // 遍历所有 Authority 行，判断是否包含 App Store 专属签名字段
+        for line in authorityLines {
+            // 提取等号右侧的签名标识值
+            if let authority = line.components(separatedBy: "=").last?.trimmingCharacters(in: .whitespaces),
+               authority == "Apple Mac OS Application Signing" {
+                // 如果找到表示为 App Store 签名
+                return true
+            }
+        }
+        // 没有匹配到 App Store 签名，返回 false
+        return false
+    }
+    
+    
+    
     
     //MARK: - Private
     
-    /// 判断`当前应用`是否是通过 `App Store` 下载的
+    /// 判断`当前应用`是否是通过 `App Store` 下载的， 使用票据检测
     /// - Returns: 如果是通过 App Store 下载并安装的应用，返回 true；否则返回 false
-    public static func isFromAppStore() -> Bool {
+    public static func isLikelyFromAppStoreByReceipt() -> Bool {
         // 1、获取 App Store 收据文件的 URL（即购买凭证路径）
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
               // 检查收据文件是否存在。如果不存在，说明不是从 App Store 下载的应用
@@ -190,6 +228,38 @@ public class LCAppStoreValidator: NSObject {
         }
         NSWorkspace.shared.open(url)
     }
+    
+    
+    /// 执行 shell 命令并获取输出
+    ///
+    /// - Parameters:
+    ///   - launchPath: 可执行文件路径，如 `/usr/bin/codesign`
+    ///   - arguments: 命令参数
+    /// - Returns: 命令的标准输出（和标准错误合并后）和退出码
+    @discardableResult
+    private static func runCommand(launchPath: String, arguments: [String]) -> (output: String, exitCode: Int32) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: launchPath)
+        process.arguments = arguments
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            
+            return (output, process.terminationStatus)
+        } catch {
+            return ("Command execution failed: \(error)", -1)
+        }
+    }
+    
+    
+    
     
     private static func localizeString(_ key: String) -> String {
 #if SWIFT_PACKAGE
