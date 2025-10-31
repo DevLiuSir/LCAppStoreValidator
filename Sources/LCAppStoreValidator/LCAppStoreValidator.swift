@@ -43,22 +43,22 @@ public class LCAppStoreValidator: NSObject {
         
         // 获取给定的日期
         guard let expireDate = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
-            print("❌ 无效的过期时间")
+            LCLogDebug("❌ 无效的过期时间")
             return
         }
         // 比较《给定的日期》是否超过《当前日期》，超过指定日期，显示警告
         if currentDate > expireDate {
-            print("⚠️ 当前时间已超过设定过期时间")
+            LCLogDebug("⚠️ 当前时间已超过设定过期时间")
             // 判断来源是否为 App Store
             if isFromAppStore() {
-                print("✅ 是 App Store 版本，允许继续使用")
+                LCLogDebug("✅ 是 App Store 版本，允许继续使用")
             } else {
-                print("❌ 非 App Store 安装，弹窗提示并退出")
+                LCLogDebug("❌ 非 App Store 安装，弹窗提示并退出")
                 // 弹窗提示 + 跳转 App Store + 退出应用
                 showAlertAndExit()
             }
         } else {
-            print("✅ 当前时间未过期")
+            LCLogDebug("✅ 当前时间未过期")
         }
     }
     
@@ -66,15 +66,15 @@ public class LCAppStoreValidator: NSObject {
     public static func checkIfInvalid(afterDays days: Int) {
         // Step 1: 判断是否已超过指定天数再执行验证
         guard shouldValidate(afterDays: days) else {
-            print("尚未满足验证条件（未超过 \(days) 天），跳过验证")
+            LCLogDebug("尚未满足验证条件（未超过 \(days) 天），跳过验证")
             return
         }
         
         // Step 2: 判断来源是否为 App Store
         if isFromAppStore() {
-            print("是 App Store 下载的")
+            LCLogDebug("是 App Store 下载的")
         } else {
-            print("不是 App Store 下载的，弹窗提示并退出")
+            LCLogDebug("不是 App Store 下载的，弹窗提示并退出")
             showAlertAndExit()
         }
     }
@@ -94,7 +94,7 @@ public class LCAppStoreValidator: NSObject {
         
         // 如果命令执行失败，直接返回 false
         guard result.exitCode == 0 else {
-            print("❌ detectEnvironment error: \(result.output)")
+            LCLogDebug("❌ detectEnvironment error: \(result.output)")
             return false
         }
         
@@ -180,18 +180,18 @@ public class LCAppStoreValidator: NSObject {
         
         if let firstLaunchTimestamp = userDefaults?.double(forKey: key), firstLaunchTimestamp > 0 {
             // Step 2: 读取已记录的首次启动时间戳
-            print("首次启动时间戳 (UTC): \(firstLaunchTimestamp)")
+            LCLogDebug("首次启动时间戳 (UTC): \(firstLaunchTimestamp)")
             
             // Step 3: 计算从首次启动到现在经过的天数
             let deltaSeconds = nowTimestamp - firstLaunchTimestamp
             let deltaDays = Int(deltaSeconds / secondsInDay)
             
-            print("距离首次启动已过天数: \(deltaDays) 天")
+            LCLogDebug("距离首次启动已过天数: \(deltaDays) 天")
             return deltaDays >= days
         } else {
             // Step 1: 首次启动，记录当前 UTC 时间戳作为首次启动时间
             userDefaults?.set(nowTimestamp, forKey: key)
-            print("首次启动时间戳已存储: \(nowTimestamp)")
+            LCLogDebug("首次启动时间戳已存储: \(nowTimestamp)")
             return false
         }
     }
@@ -218,12 +218,12 @@ public class LCAppStoreValidator: NSObject {
     /// 打开 App Store 页面（使用外部设置的 appID）
     private static func openAppStorePage() {
         guard !appID.isEmpty else {
-            print("appID 未设置")
+            LCLogDebug("appID 未设置")
             return
         }
         let appStoreUrlString = "https://apps.apple.com/cn/app/id\(appID)"
         guard let url = URL(string: appStoreUrlString) else {
-            print("无效的 URL: \(appStoreUrlString)")
+            LCLogDebug("无效的 URL: \(appStoreUrlString)")
             return
         }
         NSWorkspace.shared.open(url)
@@ -270,6 +270,21 @@ public class LCAppStoreValidator: NSObject {
         return Bundle(for: LCAppStoreValidator.self).localizedString(forKey: key, value: "", table: "LCAppStoreValidator")
 #endif
     }
+    
+    
+    
+    
+    /// Debug 模式打印
+    private static func LCLogDebug(_ items: Any..., separator: String = " ", terminator: String = "\n",
+                                   file: String = #file, function: String = #function, line: Int = #line) {
+#if DEBUG
+        let filename = (file as NSString).lastPathComponent
+        let prefix = "[🐞 DEBUG] [\(filename):\(line)] \(function) =>"
+        let message = items.map { "\($0)" }.joined(separator: separator)
+        Swift.print("\(prefix) \(message)", terminator: terminator)
+#endif
+    }
+    
     
     
 }
